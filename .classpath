@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="C:/Users/gwp16/eclipse-workspace/GouravSharma_CMPT354/sqljdbc_12.4.2.0_enu/sqljdbc_12.4/enu/jars/mssql-jdbc-12.4.2.jre8.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
