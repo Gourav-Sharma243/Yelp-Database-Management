@@ -8,7 +8,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Random;
 
 public class UpdateStars {
@@ -63,24 +62,33 @@ public class UpdateStars {
         updateStarsButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-            	
-            	String review=generateReviewID();
-            	String s =  "INSERT INTO review(review_id,user_id,business_id,stars) VALUES ('"+review+"','"+u+"','"+b+"',"+st+")";
-//            	System.out.println(s);
-            	try
-    			{
-    				Statement statement1 = con.createStatement();
-    				
-    				statement1.executeUpdate(s);
-    				
-    				JOptionPane.showMessageDialog(frame, "Review Added! Thanks");
-    				
-    			} catch (SQLException se)
-    				{
-    					System.out.println("\nSQL Exception occurred, the state : "+
-    									se.getSQLState()+"\nMessage:\n"+se.getMessage()+"\n");
-    					return;
-    				}
+                String entered = userStar.getText().trim();
+                int userStars;
+                try {
+                    userStars = Integer.parseInt(entered);
+                    if (userStars < 1 || userStars > 5) {
+                        JOptionPane.showMessageDialog(frame, "Please enter a number between 1 and 5.");
+                        return;
+                    }
+                } catch (NumberFormatException nfe) {
+                    JOptionPane.showMessageDialog(frame, "Please enter a valid number between 1 and 5.");
+                    return;
+                }
+
+                String review = generateReviewID();
+                String sql = "INSERT INTO review(review_id,user_id,business_id,stars) VALUES (?,?,?,?)";
+                try (PreparedStatement ps = c.prepareStatement(sql)) {
+                    ps.setString(1, review);
+                    ps.setString(2, u);
+                    ps.setString(3, b);
+                    ps.setInt(4, userStars);
+                    ps.executeUpdate();
+                    JOptionPane.showMessageDialog(frame, "Review Added! Thanks");
+                } catch (SQLException se) {
+                    System.out.println("\nSQL Exception occurred, the state : "+
+                                    se.getSQLState()+"\nMessage:\n"+se.getMessage()+"\n");
+                    return;
+                }
             }
         });
 

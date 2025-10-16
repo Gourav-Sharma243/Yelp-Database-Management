@@ -3,10 +3,8 @@
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -111,25 +109,24 @@ public class SignUp implements ActionListener {
     }}
 
     private boolean insertUser(String username, String name, String password) {
-		
-		String sSQL1 = "INSERT INTO Users (UserID, Password) VALUES ('" + username + "' , '" + password + "');";
-		String sSQL2 = "INSERT INTO user_yelp (user_id, name) VALUES ('" + username + "' , '" + name + "');";
-		try
-		{
-			Statement statement1 = con.createStatement();
-			statement1.executeUpdate(sSQL1);
-			System.out.println("Value Inserted into userLogin");
-			
-			Statement statement2 = con.createStatement();
-			statement2.executeUpdate(sSQL2);	
-			System.out.println("Value Inserted into user_yelp");
-			return true;
-		} catch (SQLException se)
-			{
-				System.out.println("\nSQL Exception occurred, the state : "+
-								se.getSQLState()+"\nMessage:\n"+se.getMessage()+"\n");
-		
-			}
-		return false;
+        String sSQL1 = "INSERT INTO Users (UserID, Password) VALUES (?, ?)";
+        String sSQL2 = "INSERT INTO user_yelp (user_id, name) VALUES (?, ?)";
+        try (PreparedStatement ps1 = con.prepareStatement(sSQL1);
+             PreparedStatement ps2 = con.prepareStatement(sSQL2)) {
+            ps1.setString(1, username);
+            ps1.setString(2, password);
+            ps1.executeUpdate();
+            System.out.println("Value Inserted into Users");
+
+            ps2.setString(1, username);
+            ps2.setString(2, name);
+            ps2.executeUpdate();
+            System.out.println("Value Inserted into user_yelp");
+            return true;
+        } catch (SQLException se) {
+            System.out.println("\nSQL Exception occurred, the state : "+
+                            se.getSQLState()+"\nMessage:\n"+se.getMessage()+"\n");
+        }
+        return false;
     }
 }

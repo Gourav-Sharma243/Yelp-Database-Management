@@ -5,6 +5,7 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
@@ -12,8 +13,6 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 
 public class SearchBussiness implements ActionListener {
     private JFrame frame;
@@ -86,60 +85,45 @@ public class SearchBussiness implements ActionListener {
             String city = cityField.getText();
             String minStars = minStarsField.getText();
             String orderBy = (String) orderByDropdown.getSelectedItem();
-            
-            String sSQL1 = "SELECT * FROM business b WHERE";
-            
-            int count=0;
-            
-            if(!name.isEmpty()) 
-            {
-            	sSQL1+=" b.name LIKE '%"+name+"%'" ;
-            	count++;
+
+            StringBuilder sql = new StringBuilder("SELECT * FROM business b");
+            boolean hasWhere = false;
+            java.util.List<Object> params = new java.util.ArrayList<>();
+
+            if (!name.isEmpty()) {
+                sql.append(hasWhere ? " AND" : " WHERE");
+                sql.append(" b.name LIKE ?");
+                params.add("%" + name + "%");
+                hasWhere = true;
             }
-            if(count!=0 && !city.isEmpty()) 
-            {
-            	sSQL1+=" AND '%"+city+"%' ";
-            	count++;
+            if (!city.isEmpty()) {
+                sql.append(hasWhere ? " AND" : " WHERE");
+                sql.append(" b.city LIKE ?");
+                params.add("%" + city + "%");
+                hasWhere = true;
             }
-            
-            if(count==0) 
-            {
-            	sSQL1+=" b.city LIKE '%"+city+"%' ";
-            	count++;
+            if (!minStars.isEmpty()) {
+                try {
+                    int stars = Integer.parseInt(minStars);
+                    sql.append(hasWhere ? " AND" : " WHERE");
+                    sql.append(" b.stars >= ?");
+                    params.add(stars);
+                    hasWhere = true;
+                } catch (NumberFormatException nfe) {
+                    JOptionPane.showMessageDialog(frame, "Minimum Stars must be a number.");
+                    return;
+                }
             }
-            if(count!=0 && !minStars.isEmpty()) 
-            {
-            	sSQL1+=" AND '%"+minStars+"%' ";
-            	count++;
+
+            if ("Name".equals(orderBy)) {
+                sql.append(" ORDER BY b.name");
+            } else if ("City".equals(orderBy)) {
+                sql.append(" ORDER BY b.city");
+            } else if ("Stars".equals(orderBy)) {
+                sql.append(" ORDER BY b.stars");
             }
-            if(count==0) 
-            {
-            	sSQL1+=" b.city LIKE '%"+minStars+"%' ";
-            	count++;
-            }
-            
-            if(count==0) 
-            {
-            	sSQL1="SELECT * FROM business b ";
-            }
-            
-            
-            if(orderBy.equals("Name")) 
-            {
-            	sSQL1+="ORDER BY b.name";
-            }
-            else if(orderBy.equals("City")) 
-            {
-            	sSQL1+="ORDER BY b.city";
-            }
-            else if(orderBy.equals("Stars")) 
-            {
-            	sSQL1+="ORDER BY b.stars";
-            }
-            sSQL1+=";";
-            
-            
-            Busi_Result=new Search_Business_Results(con,sSQL1,u);
+
+            Busi_Result = Search_Business_Results.showWithParams(con, sql.toString(), params, u);
             
        }
             

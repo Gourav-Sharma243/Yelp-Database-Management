@@ -5,9 +5,11 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 
 public class Search_Business_Results {
     private JFrame resultFrame;
@@ -17,6 +19,10 @@ public class Search_Business_Results {
     static String u;
 
     public Search_Business_Results(Connection con, String sSQL,String user) {
+        this(con, sSQL, user, true);
+    }
+
+    public Search_Business_Results(Connection con, String sSQL, String user, boolean runInitialQuery) {
         u=user;
     	resultFrame = new JFrame();
         resultFrame.setSize(600, 400);
@@ -61,7 +67,17 @@ public class Search_Business_Results {
 
         resultFrame.setVisible(true);
 
-        performSearch(con, sSQL, model);
+        if (runInitialQuery) {
+            performSearch(con, sSQL, model);
+        }
+    }
+
+    // Factory to support parameterized queries without executing the raw SQL first
+    public static Search_Business_Results showWithParams(Connection con, String sql, List<Object> params, String user) {
+        Search_Business_Results inst = new Search_Business_Results(con, sql, user, false);
+        DefaultTableModel model = (DefaultTableModel) inst.resultTable.getModel();
+        inst.performSearch(con, sql, params, model);
+        return inst;
     }
 
     private void performSearch(Connection con, String sSQL, DefaultTableModel model) {
@@ -85,6 +101,32 @@ public class Search_Business_Results {
                 model.addRow(rowData);
             }
 
+        } catch (SQLException se) {
+            System.out.println("Error executing SQL query: " + se.getMessage());
+        }
+    }
+
+    private void performSearch(Connection con, String sql, List<Object> params, DefaultTableModel model) {
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            int idx = 1;
+            for (Object p : params) {
+                ps.setObject(idx++, p);
+            }
+            try (ResultSet resultSet = ps.executeQuery()) {
+                while (resultSet.next()) {
+
+                    String resultBusinessId = resultSet.getString("business_id");
+                    String resultName = resultSet.getString("name");
+                    String resultAddress = resultSet.getString("address");
+                    String resultCity = resultSet.getString("city");
+                    String resultPostalCode = resultSet.getString("postal_code");
+                    String resultStars = String.valueOf(resultSet.getInt("stars"));
+                    String resultReviewCount = resultSet.getString("review_count");
+
+                    Object[] rowData = {resultBusinessId, resultName, resultAddress, resultCity, resultPostalCode, resultStars, resultReviewCount};
+                    model.addRow(rowData);
+                }
+            }
         } catch (SQLException se) {
             System.out.println("Error executing SQL query: " + se.getMessage());
         }

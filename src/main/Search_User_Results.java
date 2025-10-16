@@ -9,6 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 
 public class Search_User_Results {
     private JFrame resultFrame;
@@ -18,6 +19,10 @@ public class Search_User_Results {
   
     static AddFriend addFriendToDatabase;
     public Search_User_Results(Connection con, String sSQL,String user) {
+        this(con, sSQL, user, true);
+    }
+
+    public Search_User_Results(Connection con, String sSQL, String user, boolean runInitialQuery) {
         resultFrame = new JFrame();
         resultFrame.setSize(600, 600);
         resultFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -56,7 +61,17 @@ public class Search_User_Results {
 
         resultFrame.setVisible(true);
 
-        performSearch(con, sSQL, model);
+        if (runInitialQuery) {
+            performSearch(con, sSQL, model);
+        }
+    }
+
+    // Factory to support parameterized queries without executing raw SQL first
+    public static Search_User_Results showWithParams(Connection con, String sql, List<Object> params, String user) {
+        Search_User_Results inst = new Search_User_Results(con, sql, user, false);
+        DefaultTableModel model = (DefaultTableModel) inst.resultTable.getModel();
+        inst.performSearch(con, sql, params, model);
+        return inst;
     }
 
     private void performSearch(Connection con, String sSQL, DefaultTableModel model) {
@@ -79,6 +94,33 @@ public class Search_User_Results {
                 model.addRow(rowData);
             }
 
+        } catch (SQLException se) {
+            System.out.println("Error executing SQL query: " + se.getMessage());
+        }
+    }
+
+    private void performSearch(Connection con, String sql, List<Object> params, DefaultTableModel model) {
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            int idx = 1;
+            for (Object p : params) {
+                ps.setObject(idx++, p);
+            }
+            try (ResultSet resultSet = ps.executeQuery()) {
+                while (resultSet.next()) {
+                    String resultUserId = resultSet.getString("user_id");
+                    String resultName = resultSet.getString("name");
+                    String resultReviewCount = resultSet.getString("review_count");
+                    String resultAverageStars = String.valueOf(resultSet.getDouble("average_stars"));
+                    String ys = resultSet.getString("yelping_since");
+                    String useful = resultSet.getString("useful");
+                    String funny = resultSet.getString("funny");
+                    String cool = resultSet.getString("cool");
+                    String fans = resultSet.getString("fans");
+
+                    Object[] rowData = {resultUserId, resultName, resultReviewCount, ys, useful, funny, cool, fans, resultAverageStars};
+                    model.addRow(rowData);
+                }
+            }
         } catch (SQLException se) {
             System.out.println("Error executing SQL query: " + se.getMessage());
         }
@@ -110,20 +152,16 @@ public class Search_User_Results {
     }
 
     private void addFriendToDatabase(Connection con, String friendId) {
-        // Implement the logic to add the friend to the database
-    	  String insertQuery = "INSERT INTO friendship (user_id, friend) VALUES ('"+u+"','"+ friendId + "');";
-    	  try
-  		{
-  			Statement statement1 = con.createStatement();
-  			statement1.executeUpdate(insertQuery);
-  			System.out.println("Value Inserted into FriendShip");
-  			
-  		} catch (SQLException se)
-  			{
-  				System.out.println("\nSQL Exception occurred, the state : "+
-  								se.getSQLState()+"\nMessage:\n"+se.getMessage()+"\n");
-  		
-  			}
+        String insertQuery = "INSERT INTO friendship (user_id, friend) VALUES (?, ?)";
+        try (PreparedStatement ps = con.prepareStatement(insertQuery)) {
+            ps.setString(1, u);
+            ps.setString(2, friendId);
+            ps.executeUpdate();
+            System.out.println("Value Inserted into Friendship");
+        } catch (SQLException se) {
+            System.out.println("\nSQL Exception occurred, the state : "+
+                            se.getSQLState()+"\nMessage:\n"+se.getMessage()+"\n");
+        }
     }
 
   

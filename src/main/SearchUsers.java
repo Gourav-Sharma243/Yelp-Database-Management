@@ -74,36 +74,44 @@ public class SearchUsers implements ActionListener {
             String maxAvgStars = maxAvgStarsField.getText();
            
 
-            String sSQL1 = "SELECT * FROM user_yelp u WHERE";
-            
-            int count = 0;
+            StringBuilder sql = new StringBuilder("SELECT * FROM user_yelp u");
+            boolean hasWhere = false;
+            java.util.List<Object> params = new java.util.ArrayList<>();
 
             if (!name.isEmpty()) {
-                sSQL1 += " u.name LIKE '%" + name + "%' ;";
-                count++;
+                sql.append(hasWhere ? " AND" : " WHERE");
+                sql.append(" u.name LIKE ?");
+                params.add("%" + name + "%");
+                hasWhere = true;
             }
 
-            if (count != 0 && !minReviewCount.isEmpty()) {
-                sSQL1 += " AND u.review_count >= " + minReviewCount + " ;";
-                count++;
-            } else if (count == 0 && !minReviewCount.isEmpty()) {
-                sSQL1 += " u.review_count >= " + minReviewCount + " ;";
-                count++;
+            if (!minReviewCount.isEmpty()) {
+                try {
+                    int minRC = Integer.parseInt(minReviewCount);
+                    sql.append(hasWhere ? " AND" : " WHERE");
+                    sql.append(" u.review_count >= ?");
+                    params.add(minRC);
+                    hasWhere = true;
+                } catch (NumberFormatException nfe) {
+                    javax.swing.JOptionPane.showMessageDialog(frame, "Minimum Review Count must be a number.");
+                    return;
+                }
             }
 
-            if (count != 0 && !maxAvgStars.isEmpty()) {
-                sSQL1 += " AND u.average_stars <= " + maxAvgStars + " ;";
-                count++;
-            } else if (count == 0 && !maxAvgStars.isEmpty()) {
-                sSQL1 += " u.average_stars <= " + maxAvgStars + " ;";
-                count++;
+            if (!maxAvgStars.isEmpty()) {
+                try {
+                    double maxAS = Double.parseDouble(maxAvgStars);
+                    sql.append(hasWhere ? " AND" : " WHERE");
+                    sql.append(" u.average_stars <= ?");
+                    params.add(maxAS);
+                    hasWhere = true;
+                } catch (NumberFormatException nfe) {
+                    javax.swing.JOptionPane.showMessageDialog(frame, "Maximum Average Stars must be a number.");
+                    return;
+                }
             }
 
-            if (count == 0) {
-                sSQL1 = "SELECT * FROM user_yelp u ;";
-            }
-
-            SUR=new Search_User_Results(con,sSQL1,u);
+            SUR = Search_User_Results.showWithParams(con, sql.toString(), params, u);
         }
 
     }

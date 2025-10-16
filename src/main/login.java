@@ -3,7 +3,6 @@ package main;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -81,7 +80,7 @@ public class login implements ActionListener {
     
 
     public static void main(String[] args) {      
-        con = getConnection();
+        con = Db.getConnection();
         new login();
     }
 
@@ -107,62 +106,34 @@ public class login implements ActionListener {
     }
     
 public static boolean loginCheck(String id, String password) {
-		
-		PreparedStatement pstmt = null;
-		ResultSet rs;
-		String sSQL = "SELECT * FROM Users WHERE UserID = '" + id + "'";	
+        ResultSet rs = null;
+        String sSQL = "SELECT Password FROM Users WHERE UserID = ?";
 
-		JFrame frame2=new JFrame();
-		try
-		{
-			pstmt = con.prepareStatement(sSQL);
-			rs = pstmt.executeQuery();
-			if (rs.next()) {
-				if (!rs.getString("Password").equals(password)) {
-					JOptionPane.showMessageDialog(frame2,"Wrong Password");
-					rs.close();
-					return false;
-				}
-				else {
-					System.out.println("Correct Password");
-					rs.close();
-					return true;
-				}
-			}
-			return false;
-				
-		} catch (SQLException se)
-			{
-				System.out.println("\nSQL Exception occurred, the state : "+
-								se.getSQLState()+"\nMessage:\n"+se.getMessage()+"\n");
-				return false;
-			}
-	}
-
-    private static Connection getConnection() {
-        // Establish database connection
-        String sUsername = "s_ghs4";
-        String sPassphrase = "6hdTMNbTdNY2he2m";
-
-        String sSQLServerString = "jdbc:sqlserver://cypress.csil.sfu.ca;" +
-                "encrypt=true;trustServerCertificate=true;loginTimeout=90;";
-
-        try {
-            con = DriverManager.getConnection(sSQLServerString, sUsername, sPassphrase);
+        JFrame frame2=new JFrame();
+        try (PreparedStatement pstmt = con.prepareStatement(sSQL)) {
+            pstmt.setString(1, id);
+            rs = pstmt.executeQuery();
+            if (rs.next()) {
+                if (!rs.getString("Password").equals(password)) {
+                    JOptionPane.showMessageDialog(frame2,"Wrong Password");
+                    return false;
+                } else {
+                    System.out.println("Correct Password");
+                    return true;
+                }
+            }
+            JOptionPane.showMessageDialog(frame2,"User not found");
+            return false;
         } catch (SQLException se) {
-            System.out.println("\n\nFail to connect to CSIL SQL Server; exit now.\n\n");
-
-            se.printStackTrace(System.err);
-            System.err.println("SQLState: " +
-                    ((SQLException) se).getSQLState());
-
-            System.err.println("Error Code: " +
-                    ((SQLException) se).getErrorCode());
-
-            System.err.println("Message: " + se.getMessage());
+            System.out.println("\nSQL Exception occurred, the state : "+
+                            se.getSQLState()+"\nMessage:\n"+se.getMessage()+"\n");
+            return false;
+        } finally {
+            if (rs != null) try { rs.close(); } catch (SQLException ignore) {}
         }
-        return con;
-    }
+}
+
+    // Connection provided by Db utility now.
     
     
 }
